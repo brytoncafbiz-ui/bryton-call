@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2b1d14">
+<title>Panggil Waiter — Bryton Café</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#17100b; --card:#241810; --card-2:#2f2016; --line:#42301f;
+    --ink:#f6efe7; --ink-dim:#c3ab95; --accent:#e0a458; --accent-ink:#2b1d14;
+    --ok:#6fbf73; --warn:#e0a458; --err:#e0685a;
+    --pad: clamp(16px, 5vw, 28px);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); min-height:100dvh;
+    font:400 16px/1.5 'Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
+    padding: env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);
+  }
+  [hidden]{display:none!important}
+  .wrap{max-width:520px;margin:0 auto;padding:var(--pad) var(--pad) 40px;display:flex;flex-direction:column;min-height:100dvh}
+
+  /* header */
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+  .brand{font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:12px;color:var(--accent)}
+  .lang{display:flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px}
+  .lang button{
+    appearance:none;border:0;background:transparent;color:var(--ink-dim);
+    font:600 12px/1 'Plus Jakarta Sans',sans-serif;padding:7px 12px;border-radius:999px;cursor:pointer;
+  }
+  .lang button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+
+  .table-badge{
+    display:inline-flex;align-items:center;gap:8px;align-self:flex-start;
+    background:var(--card);border:1px solid var(--line);color:var(--ink);
+    padding:8px 16px;border-radius:999px;font-weight:700;font-size:15px;margin-bottom:10px;
+  }
+  .table-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+  h1{font-size:clamp(25px,7vw,32px);line-height:1.15;font-weight:800;margin:.1em 0 .35em}
+  .sub{color:var(--ink-dim);font-size:15px;margin:0 0 26px}
+
+  /* preset buttons */
+  .choices{display:grid;gap:12px}
+  .choice{
+    display:flex;align-items:center;gap:16px;width:100%;text-align:left;cursor:pointer;
+    background:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:18px 18px;color:var(--ink);font-family:inherit;
+    transition:transform .12s ease, background .12s ease, border-color .12s ease;
+  }
+  .choice:active{transform:scale(.982);background:var(--card-2)}
+  .choice:disabled{opacity:.45;cursor:default}
+  .choice .ic{
+    flex:0 0 auto;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;
+    background:rgba(224,164,88,.14);border:1px solid rgba(224,164,88,.28);
+  }
+  .choice .ic svg{width:23px;height:23px;stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .choice .tx b{display:block;font-size:17px;font-weight:700;line-height:1.25}
+  .choice .tx span{display:block;font-size:13px;color:var(--ink-dim);margin-top:2px}
+  .choice .go{margin-left:auto;color:var(--ink-dim);font-size:20px;line-height:1}
+
+  /* message */
+  .note{margin-top:22px}
+  .note label{display:block;font-size:13px;font-weight:600;color:var(--ink-dim);margin-bottom:8px}
+  textarea{
+    width:100%;min-height:82px;resize:vertical;font:inherit;font-size:16px;
+    background:var(--card);color:var(--ink);border:1px solid var(--line);
+    border-radius:14px;padding:13px 14px;
+  }
+  textarea::placeholder{color:#8a7461}
+  textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .count{text-align:right;font-size:12px;color:var(--ink-dim);margin-top:6px}
+  .send-note{
+    margin-top:10px;width:100%;padding:15px;border-radius:14px;border:0;cursor:pointer;
+    background:var(--accent);color:var(--accent-ink);font:700 16px/1 'Plus Jakarta Sans',sans-serif;
+  }
+  .send-note:disabled{opacity:.4;cursor:default}
+
+  .foot{margin-top:auto;padding-top:28px;text-align:center;color:#7a6553;font-size:12px}
+
+  /* states */
+  .state{text-align:center;padding:46px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1}
+  .state .big{width:74px;height:74px;border-radius:50%;display:grid;place-items:center;margin-bottom:22px}
+  .state .big svg{width:36px;height:36px;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .state.ok .big{background:rgba(111,191,115,.15);border:1px solid rgba(111,191,115,.35)}
+  .state.ok .big svg{stroke:var(--ok)}
+  .state.bad .big{background:rgba(224,104,90,.14);border:1px solid rgba(224,104,90,.34)}
+  .state.bad .big svg{stroke:var(--err)}
+  .state h2{font-size:24px;font-weight:800;margin:0 0 10px}
+  .receipt{
+    background:var(--card);border:1px solid var(--line);color:var(--accent);
+    font-weight:700;font-size:14px;padding:8px 16px;border-radius:999px;margin-bottom:14px;
+  }
+  .state p{color:var(--ink-dim);margin:0;max-width:34ch;font-size:15px}
+  .again{
+    margin-top:26px;background:transparent;border:1px solid var(--line);color:var(--ink);
+    padding:13px 24px;border-radius:999px;font:600 15px 'Plus Jakarta Sans',sans-serif;cursor:pointer;
+  }
+  .again:disabled{opacity:.45;cursor:default}
+  .spin{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .toast{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));
+    background:var(--err);color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;font-weight:600;
+    max-width:88vw;text-align:center;z-index:50;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- LOADING -->
+  <div id="v-load" class="state"><div class="spin"></div></div>
+
+  <!-- MAIN -->
+  <div id="v-main" hidden>
+    <div class="top">
+      <div class="brand" id="brand">Bryton Café</div>
+      <div class="lang">
+        <button type="button" data-lang="id" aria-pressed="true">ID</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+
+    <div class="table-badge"><span class="dot"></span><span id="tableLabel">—</span></div>
+    <h1 data-t="title">Ada yang bisa kami bantu?</h1>
+    <p class="sub" data-t="sub">Pilih salah satu, staf kami akan segera datang.</p>
+
+    <div class="choices">
+      <button class="choice" data-kind="waiter">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 1 3 3v1a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3Z"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></span>
+        <span class="tx"><b data-t="k_waiter">Panggil Waiter</b><span data-t="k_waiter_s">Butuh bantuan staf</span></span>
+        <span class="go">›</span>
+      </button>
+
+      <button class="choice" data-kind="bill">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9.5 8h5M9.5 12h5"/></svg></span>
+        <span class="tx"><b data-t="k_bill">Minta Bill</b><span data-t="k_bill_s">Siap membayar</span></span>
+        <span class="go">›</span>
+      </button>
+
+      <button class="choice" data-kind="clean">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M10 3.5 11.7 8l4.5 1.7-4.5 1.7L10 16l-1.7-4.6L3.8 9.7 8.3 8 10 3.5Z"/><path d="M17.5 13.5 18.4 16l2.5.9-2.5.9-.9 2.5-.9-2.5-2.5-.9 2.5-.9.9-2.5Z"/></svg></span>
+        <span class="tx"><b data-t="k_clean">Bersihkan Meja</b><span data-t="k_clean_s">Meja perlu dirapikan</span></span>
+        <span class="go">›</span>
+      </button>
+    </div>
+
+    <div class="note">
+      <label for="msg" data-t="note_l">Ada permintaan lain? (opsional)</label>
+      <textarea id="msg" maxlength="200" data-t-ph="note_ph" placeholder="Contoh: tolong tambah air putih 2 gelas"></textarea>
+      <div class="count"><span id="count">0</span>/200</div>
+      <button class="send-note" id="sendNote" disabled data-t="note_send">Kirim Permintaan</button>
+    </div>
+
+    <div class="foot" id="footNote"></div>
+  </div>
+
+  <!-- SENT -->
+  <div id="v-sent" class="state ok" hidden>
+    <div class="big"><svg viewBox="0 0 24 24"><path d="m4 12.5 5.2 5.2L20 7"/></svg></div>
+    <h2 data-t="sent_h">Panggilan terkirim</h2>
+    <div class="receipt" id="sentWhat"></div>
+    <p id="sentBody" data-t="sent_b">Staf kami segera menuju meja Anda. Terima kasih.</p>
+    <button class="again" id="again" data-t="again">Panggil lagi</button>
+  </div>
+
+  <!-- ERROR -->
+  <div id="v-err" class="state bad" hidden>
+    <div class="big"><svg viewBox="0 0 24 24"><path d="M12 8v5"/><path d="M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg></div>
+    <h2 id="errH">—</h2>
+    <p id="errB">—</p>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ---------------- copy ---------------- */
+  const T = {
+    id: {
+      title:'Ada yang bisa kami bantu?', sub:'Pilih salah satu, staf kami akan segera datang.',
+      k_waiter:'Panggil Waiter', k_waiter_s:'Butuh bantuan staf',
+      k_bill:'Minta Bill',      k_bill_s:'Siap membayar',
+      k_clean:'Bersihkan Meja', k_clean_s:'Meja perlu dirapikan',
+      note_l:'Ada permintaan lain? (opsional)',
+      note_ph:'Contoh: tolong tambah air putih 2 gelas',
+      note_send:'Kirim Permintaan', k_other:'Permintaan Lain',
+      sent_h:'Panggilan terkirim', sent_b:'Staf kami segera menuju meja Anda. Terima kasih.',
+      again:'Panggil lagi', again_wait:'Tunggu {s} detik',
+      e_noparam_h:'Kode meja tidak ditemukan',
+      e_noparam_b:'Silakan pindai ulang QR code yang ada di meja Anda.',
+      e_table_h:'Meja tidak dikenali',
+      e_table_b:'QR ini sudah tidak berlaku. Mohon hubungi staf kami secara langsung.',
+      e_closed_h:'Kami sedang tutup',
+      e_closed_b:'Panggilan hanya aktif pada jam buka, {o} – {c}.',
+      e_paused_h:'Panggilan dinonaktifkan',
+      e_paused_b:'Mohon hubungi staf kami secara langsung. Terima kasih atas pengertiannya.',
+      e_net_h:'Tidak ada koneksi',
+      e_net_b:'Periksa koneksi internet Anda lalu coba lagi, atau hubungi staf kami secara langsung.',
+      t_cooldown:'Panggilan sudah dikirim. Coba lagi dalam {s} detik.',
+      t_fail:'Gagal mengirim. Coba lagi.',
+      foot:'Pindai QR di meja Anda kapan saja untuk memanggil staf.'
+    },
+    en: {
+      title:'How can we help?', sub:'Pick one and a member of our team will come over.',
+      k_waiter:'Call a Waiter',  k_waiter_s:'I need assistance',
+      k_bill:'Request the Bill', k_bill_s:'Ready to pay',
+      k_clean:'Clear the Table', k_clean_s:'The table needs tidying',
+      note_l:'Anything else? (optional)',
+      note_ph:'e.g. two glasses of water please',
+      note_send:'Send Request', k_other:'Other Request',
+      sent_h:'Your call was sent', sent_b:'Our team is on the way to your table. Thank you.',
+      again:'Call again', again_wait:'Wait {s}s',
+      e_noparam_h:'No table code found',
+      e_noparam_b:'Please scan the QR code on your table again.',
+      e_table_h:'Table not recognised',
+      e_table_b:'This QR code is no longer valid. Please speak to a member of our team.',
+      e_closed_h:'We are closed',
+      e_closed_b:'Calls are only active during opening hours, {o} – {c}.',
+      e_paused_h:'Calls are switched off',
+      e_paused_b:'Please speak to a member of our team directly. Thank you for understanding.',
+      e_net_h:'No connection',
+      e_net_b:'Check your internet connection and try again, or speak to our team directly.',
+      t_cooldown:'Already sent. Try again in {s}s.',
+      t_fail:'Could not send. Please try again.',
+      foot:'Scan the QR on your table any time to call our team.'
+    }
+  };
+
+  /* ---------------- boot ---------------- */
+  const cfg = window.BRYTON || {};
+  const $ = s => document.querySelector(s);
+  const views = { load:$('#v-load'), main:$('#v-main'), sent:$('#v-sent'), err:$('#v-err') };
+  const show = k => Object.keys(views).forEach(n => views[n].hidden = (n !== k));
+
+  let lang = 'id', tableRow = null, settings = null, cdTimer = null, toastTimer = null, lastKind = null;
+
+  try {
+    const saved = localStorage.getItem('bryton_lang');
+    if (saved === 'id' || saved === 'en') lang = saved;
+  } catch (e) { /* private mode — stay with the default */ }
+
+  const tableCode = new URLSearchParams(location.search).get('t');
+
+  let sb = null;
+  try {
+    sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  } catch (e) { /* handled by the null check below */ }
+
+  /* ---------------- i18n ---------------- */
+  function applyLang() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-t]').forEach(el => {
+      const v = T[lang][el.dataset.t]; if (v) el.textContent = v;
+    });
+    document.querySelectorAll('[data-t-ph]').forEach(el => {
+      const v = T[lang][el.dataset.tPh]; if (v) el.placeholder = v;
+    });
+    document.querySelectorAll('.lang button').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+    $('#footNote').textContent = T[lang].foot;
+    renderReceipt();
+    if (!views.err.hidden && views.err.dataset.key) renderErr(views.err.dataset.key, JSON.parse(views.err.dataset.args || '{}'));
+    if ($('#again').disabled && cdTimer) { /* countdown text refreshes on its next tick */ }
+  }
+
+  // Confirmation chip: what was asked for, at which table.
+  function renderReceipt() {
+    if (!lastKind || !tableRow) { $('#sentWhat').hidden = true; return; }
+    $('#sentWhat').hidden = false;
+    $('#sentWhat').textContent = T[lang]['k_' + lastKind] + ' · ' + tableRow.label;
+  }
+
+  document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => {
+    lang = b.dataset.lang;
+    try { localStorage.setItem('bryton_lang', lang); } catch (e) {}
+    applyLang();
+  }));
+
+  function fill(str, args) {
+    return String(str).replace(/\{(\w+)\}/g, (_, k) => (args && args[k] != null ? args[k] : ''));
+  }
+
+  function renderErr(key, args) {
+    views.err.dataset.key = key;
+    views.err.dataset.args = JSON.stringify(args || {});
+    $('#errH').textContent = T[lang]['e_' + key + '_h'] || '—';
+    $('#errB').textContent = fill(T[lang]['e_' + key + '_b'] || '', args);
+    show('err');
+  }
+
+  function toast(key, args) {
+    const old = document.querySelector('.toast'); if (old) old.remove();
+    clearTimeout(toastTimer);
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = fill(T[lang][key], args);
+    document.body.appendChild(el);
+    toastTimer = setTimeout(() => el.remove(), 4000);
+  }
+
+  /* ---------------- load ---------------- */
+  async function boot() {
+    applyLang();
+
+    if (!tableCode)       { renderErr('noparam'); return; }
+    if (!sb || !cfg.SUPABASE_URL || cfg.SUPABASE_URL.includes('YOUR-PROJECT')) { renderErr('net'); return; }
+
+    try {
+      const [tRes, sRes] = await Promise.all([
+        sb.from('tables').select('id,label,floor').eq('id', tableCode).eq('active', true).maybeSingle(),
+        sb.from('settings').select('*').eq('id', 1).maybeSingle()
+      ]);
+
+      if (tRes.error || sRes.error) { renderErr('net'); return; }
+      if (!tRes.data)               { renderErr('table'); return; }
+
+      tableRow = tRes.data;
+      settings = sRes.data || {};
+
+      $('#tableLabel').textContent = tableRow.label;
+      $('#brand').textContent = settings.cafe_name || cfg.CAFE_NAME || 'Bryton Café';
+      document.title = (settings.cafe_name || 'Bryton Café') + ' — ' + tableRow.label;
+
+      if (settings.accepting_calls === false) { renderErr('paused'); return; }
+      if (!withinHours(settings)) {
+        renderErr('closed', { o: hhmm(settings.open_time), c: hhmm(settings.close_time) });
+        return;
+      }
+      show('main');
+    } catch (e) {
+      renderErr('net');
+    }
+  }
+
+  function hhmm(t) { return String(t || '').slice(0, 5); }
+
+  // Mirrors the server check so we fail early and politely.
+  // The database remains the authority.
+  function withinHours(s) {
+    if (!s.open_time || !s.close_time) return true;
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    const cur = now.getHours() * 60 + now.getMinutes();
+    const [oh, om] = hhmm(s.open_time).split(':').map(Number);
+    const [ch, cm] = hhmm(s.close_time).split(':').map(Number);
+    const o = oh * 60 + om, c = ch * 60 + cm;
+    return o <= c ? (cur >= o && cur < c) : (cur >= o || cur < c);
+  }
+
+  /* ---------------- sending ---------------- */
+  let sending = false;
+
+  async function sendCall(kind) {
+    if (sending) return;
+    sending = true;
+    document.querySelectorAll('.choice, .send-note').forEach(b => b.disabled = true);
+
+    const message = $('#msg').value.trim();
+
+    try {
+      const { data, error } = await sb.rpc('create_call', {
+        p_table: tableRow.id, p_kind: kind, p_message: message || null
+      });
+
+      if (error) { toast('t_fail'); return; }
+
+      if (!data || data.ok !== true) {
+        const code = data && data.error;
+        if (code === 'cooldown')      toast('t_cooldown', { s: data.wait_seconds });
+        else if (code === 'closed')   renderErr('closed', { o: data.open_time, c: data.close_time });
+        else if (code === 'paused')   renderErr('paused');
+        else if (code === 'unknown_table') renderErr('table');
+        else toast('t_fail');
+        return;
+      }
+
+      lastKind = kind;
+      $('#msg').value = ''; $('#count').textContent = '0';
+      $('#sendNote').disabled = true;
+      renderReceipt();
+      show('sent');
+      startCooldown(data.cooldown || 60);
+    } catch (e) {
+      toast('t_fail');
+    } finally {
+      sending = false;
+      document.querySelectorAll('.choice').forEach(b => b.disabled = false);
+      $('#sendNote').disabled = $('#msg').value.trim().length === 0;
+    }
+  }
+
+  function startCooldown(sec) {
+    const btn = $('#again');
+    let left = sec;
+    clearInterval(cdTimer);
+    const tick = () => {
+      if (left <= 0) {
+        clearInterval(cdTimer);
+        btn.disabled = false;
+        btn.textContent = T[lang].again;
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = fill(T[lang].again_wait, { s: left });
+      left--;
+    };
+    tick();
+    cdTimer = setInterval(tick, 1000);
+  }
+
+  /* ---------------- wiring ---------------- */
+  document.querySelectorAll('.choice').forEach(b =>
+    b.addEventListener('click', () => sendCall(b.dataset.kind)));
+
+  $('#sendNote').addEventListener('click', () => sendCall('other'));
+
+  $('#msg').addEventListener('input', e => {
+    $('#count').textContent = e.target.value.length;
+    $('#sendNote').disabled = e.target.value.trim().length === 0;
+  });
+
+  $('#again').addEventListener('click', () => { if (!$('#again').disabled) show('main'); });
+
+  boot();
+})();
+</script>
+</body>
+</html>

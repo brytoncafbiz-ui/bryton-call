@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cetak QR Meja — Bryton Café</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#12100e; --panel:#1c1916; --panel-2:#262119; --line:#373026;
+         --ink:#f7f2ec; --dim:#a49584; --accent:#e0a458; --ink-on-accent:#241a10; }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);
+       font:400 16px/1.45 'Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  [hidden]{display:none!important}
+  button{font-family:inherit;cursor:pointer}
+
+  #login{min-height:100dvh;display:grid;place-items:center;padding:24px}
+  .lcard{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:30px}
+  .lcard h1{font-size:21px;margin:0 0 6px;font-weight:800}
+  .lcard p{margin:0 0 22px;color:var(--dim);font-size:14px}
+  .lcard input{width:100%;padding:13px 14px;margin-bottom:11px;border-radius:12px;font:inherit;font-size:16px;
+               background:var(--panel-2);border:1px solid var(--line);color:var(--ink)}
+  .lcard button{width:100%;padding:14px;border:0;border-radius:12px;background:var(--accent);
+                color:var(--ink-on-accent);font-weight:700;font-size:16px}
+  .lerr{color:#e0685a;font-size:13px;margin-top:12px;min-height:18px}
+
+  .bar{position:sticky;top:0;z-index:5;display:flex;gap:9px;align-items:center;flex-wrap:wrap;
+       padding:14px 18px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .bar h1{font-size:15px;font-weight:800;margin:0 8px 0 0;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+  .chip{background:var(--panel-2);border:1px solid var(--line);color:var(--dim);
+        padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600}
+  .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--ink-on-accent)}
+  .bar .go{margin-left:auto;background:var(--accent);border:0;color:var(--ink-on-accent);
+           padding:11px 20px;border-radius:11px;font-weight:700;font-size:14px}
+  .hint{padding:14px 18px 0;color:var(--dim);font-size:13px;max-width:70ch}
+
+  .sheet{padding:18px;display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+  .card{background:#fff;color:#1a1512;border-radius:14px;padding:18px 14px 16px;text-align:center;
+        position:relative;cursor:pointer;border:3px solid transparent}
+  .card.off{opacity:.3}
+  .card.sel{border-color:var(--accent)}
+  .card .qr{width:150px;height:150px;margin:0 auto 12px;display:grid;place-items:center}
+  .card .qr img,.card .qr canvas{width:100%!important;height:100%!important;display:block}
+  .card .lbl{font-weight:800;font-size:19px;letter-spacing:-.01em}
+  .card .cafe{font-size:9.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#a07a42;margin-bottom:10px}
+  .card .ins{font-size:10.5px;line-height:1.45;color:#6b5a4a;margin-top:7px}
+  .card .ins b{display:block;color:#1a1512;font-size:11.5px;font-weight:700;margin-bottom:1px}
+  .card .code{font-size:8px;color:#bcaa98;font-family:ui-monospace,monospace;margin-top:7px}
+
+  @media print{
+    @page{size:A4;margin:10mm}
+    body{background:#fff}
+    .bar,.hint{display:none!important}
+    .sheet{display:grid;grid-template-columns:1fr 1fr;gap:8mm;padding:0}
+    .card{border:1px dashed #d8cec2!important;break-inside:avoid;page-break-inside:avoid;
+          padding:10mm 6mm;border-radius:0}
+    .card.off,.card:not(.sel){display:none}
+    .card .qr{width:46mm;height:46mm}
+  }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <form class="lcard" id="loginForm">
+    <h1>Cetak QR Meja</h1>
+    <p>Masuk dengan akun staf Bryton Café.</p>
+    <input type="email" id="email" placeholder="Email staf" autocomplete="username" required>
+    <input type="password" id="pass" placeholder="Password" autocomplete="current-password" required>
+    <button type="submit" id="loginBtn">Masuk</button>
+    <div class="lerr" id="lerr"></div>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <div class="bar">
+    <h1>QR Meja</h1>
+    <button class="chip" data-floor="all" aria-pressed="true">Semua</button>
+    <button class="chip" data-floor="1" aria-pressed="false">L1</button>
+    <button class="chip" data-floor="2" aria-pressed="false">L2</button>
+    <button class="chip" data-floor="3" aria-pressed="false">L3</button>
+    <button class="chip" id="selAll" style="color:var(--ink)">Pilih semua</button>
+    <button class="chip" id="selNone" style="color:var(--ink)">Kosongkan</button>
+    <button class="go" id="printBtn">Cetak</button>
+  </div>
+  <p class="hint">Ketuk kartu untuk memilih atau membatalkan. Hanya kartu yang terpilih (bergaris emas) yang akan ikut tercetak, dua kartu per baris di kertas A4. Meja nonaktif ditampilkan pudar dan tidak bisa dicetak.</p>
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const cfg = window.BRYTON || {};
+  const $ = s => document.querySelector(s);
+  const sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+
+  let rows = [], filter = 'all', selected = new Set(), cafeName = cfg.CAFE_NAME || 'Bryton Café';
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g,
+      m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  }
+
+  function urlFor(id) {
+    const base = String(cfg.CALL_PAGE_URL || '').replace(/\/?$/, '/');
+    return base + '?t=' + encodeURIComponent(id);
+  }
+
+  function render() {
+    const list = rows.filter(r => filter === 'all' || String(r.floor) === filter);
+    $('#sheet').innerHTML = list.map(r => `
+      <div class="card ${r.active ? '' : 'off'} ${selected.has(r.id) ? 'sel' : ''}" data-id="${esc(r.id)}">
+        <div class="cafe">${esc(cafeName)}</div>
+        <div class="qr" id="qr-${esc(r.id)}"></div>
+        <div class="lbl">${esc(r.label)}</div>
+        <div class="ins">
+          <b>Pindai untuk memanggil staf</b>
+          Scan to call our team
+        </div>
+        <div class="code">${esc(r.id)}</div>
+      </div>`).join('');
+
+    list.forEach(r => {
+      const host = document.getElementById('qr-' + r.id);
+      if (!host) return;
+      host.innerHTML = '';
+      new QRCode(host, {
+        text: urlFor(r.id),
+        width: 600, height: 600,      // oversized so print stays crisp
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    });
+  }
+
+  $('#sheet').addEventListener('click', e => {
+    const card = e.target.closest('.card'); if (!card || card.classList.contains('off')) return;
+    const id = card.dataset.id;
+    if (selected.has(id)) selected.delete(id); else selected.add(id);
+    card.classList.toggle('sel', selected.has(id));
+  });
+
+  document.querySelectorAll('.chip[data-floor]').forEach(b => b.addEventListener('click', () => {
+    filter = b.dataset.floor;
+    document.querySelectorAll('.chip[data-floor]').forEach(x =>
+      x.setAttribute('aria-pressed', String(x === b)));
+    render();
+  }));
+
+  $('#selAll').addEventListener('click', () => {
+    rows.filter(r => r.active && (filter === 'all' || String(r.floor) === filter))
+        .forEach(r => selected.add(r.id));
+    render();
+  });
+  $('#selNone').addEventListener('click', () => { selected.clear(); render(); });
+
+  $('#printBtn').addEventListener('click', () => {
+    if (!selected.size) { alert('Pilih minimal satu meja terlebih dahulu.'); return; }
+    window.print();
+  });
+
+  async function start() {
+    $('#login').hidden = true;
+    $('#app').hidden = false;
+
+    const [tRes, sRes] = await Promise.all([
+      sb.from('tables').select('id,label,floor,active').order('id'),
+      sb.from('settings').select('cafe_name').eq('id', 1).maybeSingle()
+    ]);
+
+    rows = tRes.data || [];
+    if (sRes.data && sRes.data.cafe_name) cafeName = sRes.data.cafe_name;
+    rows.filter(r => r.active).forEach(r => selected.add(r.id));   // default: print everything
+    render();
+  }
+
+  $('#loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    $('#loginBtn').disabled = true; $('#lerr').textContent = '';
+    const { error } = await sb.auth.signInWithPassword({
+      email: $('#email').value.trim(), password: $('#pass').value
+    });
+    $('#loginBtn').disabled = false;
+    if (error) { $('#lerr').textContent = 'Email atau password salah.'; return; }
+    start();
+  });
+
+  sb.auth.getSession().then(({ data }) => { if (data && data.session) start(); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12100e">
+<title>Panggilan Meja — Bryton Café</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12100e; --panel:#1c1916; --panel-2:#262119; --line:#373026;
+    --ink:#f7f2ec; --dim:#a49584; --accent:#e0a458; --ink-on-accent:#241a10;
+    --open:#e0685a; --ack:#59a7d8; --ok:#6fbf73;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%}
+  body{
+    background:var(--bg);color:var(--ink);overflow:hidden;
+    font:400 16px/1.45 'Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;
+    padding: env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);
+  }
+  [hidden]{display:none!important}
+  button{font-family:inherit;cursor:pointer}
+
+  /* ---------- login ---------- */
+  #login{height:100dvh;display:grid;place-items:center;padding:24px}
+  .lcard{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:30px}
+  .lcard h1{font-size:21px;margin:0 0 6px;font-weight:800}
+  .lcard p{margin:0 0 22px;color:var(--dim);font-size:14px}
+  .lcard input{
+    width:100%;padding:13px 14px;margin-bottom:11px;border-radius:12px;font:inherit;font-size:16px;
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+  }
+  .lcard input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .lcard button{width:100%;padding:14px;border:0;border-radius:12px;background:var(--accent);color:var(--ink-on-accent);font-weight:700;font-size:16px}
+  .lerr{color:var(--open);font-size:13px;margin-top:12px;min-height:18px}
+
+  /* ---------- app shell ---------- */
+  #app{height:100dvh;display:flex;flex-direction:column}
+  header{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel);
+  }
+  .logo{font-weight:800;font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-right:2px}
+  .conn{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim)}
+  .conn i{width:8px;height:8px;border-radius:50%;background:var(--ok);display:block}
+  .conn.off i{background:var(--open)}
+  .filters{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+  .chip{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--dim);
+    padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600;
+  }
+  .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--ink-on-accent)}
+  .iconbtn{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
+  }
+  .iconbtn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .iconbtn.muted{color:var(--open);border-color:var(--open)}
+
+  main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+  .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(285px,1fr))}
+
+  .call{
+    background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--open);
+    border-radius:16px;padding:15px 16px;display:flex;flex-direction:column;gap:11px;
+    animation:pop .25s ease;
+  }
+  .call.ack{border-left-color:var(--ack);opacity:.82}
+  @keyframes pop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .call .r1{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .call .tbl{font-size:22px;font-weight:800;line-height:1.1}
+  .call .fl{font-size:11px;font-weight:700;color:var(--dim);border:1px solid var(--line);padding:3px 8px;border-radius:999px}
+  .call .el{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:var(--dim)}
+  .call .el.hot{color:var(--open)}
+  .kind{display:inline-block;font-size:13px;font-weight:700;padding:5px 11px;border-radius:8px;align-self:flex-start}
+  .k-waiter{background:rgba(224,164,88,.16);color:var(--accent)}
+  .k-bill{background:rgba(111,191,115,.14);color:var(--ok)}
+  .k-clean{background:rgba(89,167,216,.14);color:var(--ack)}
+  .k-other{background:rgba(164,149,132,.16);color:var(--dim)}
+  .msg{background:var(--panel-2);border-radius:10px;padding:10px 12px;font-size:15px;line-height:1.4;word-break:break-word}
+  .acts{display:flex;gap:8px}
+  .acts button{flex:1;padding:12px;border-radius:11px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-weight:700;font-size:14px}
+  .acts .prim{background:var(--accent);border-color:var(--accent);color:var(--ink-on-accent)}
+
+  .empty{height:100%;display:grid;place-items:center;text-align:center;color:var(--dim)}
+  .empty svg{width:52px;height:52px;stroke:var(--line);fill:none;stroke-width:1.5;margin-bottom:14px}
+  .empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:5px}
+  .empty span{font-size:14px}
+
+  /* ---------- standby ---------- */
+  #standby{
+    position:fixed;inset:0;background:#050403;z-index:80;opacity:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+    color:#3a332b;transition:opacity .45s ease;
+  }
+  #standby .clock{font-size:clamp(54px,15vw,110px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+  #standby .hint{font-size:13px;letter-spacing:.1em;text-transform:uppercase}
+
+  /* ---------- modal ---------- */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:90;display:flex;align-items:flex-end;justify-content:center}
+  .sheet{
+    background:var(--panel);width:100%;max-width:560px;max-height:88dvh;overflow-y:auto;
+    border-radius:22px 22px 0 0;padding:22px 20px calc(26px + env(safe-area-inset-bottom,0px));
+    border:1px solid var(--line);
+  }
+  @media(min-width:640px){ .modal{align-items:center} .sheet{border-radius:20px} }
+  .sheet h2{margin:0 0 18px;font-size:19px;font-weight:800}
+  .sheet h3{margin:26px 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim)}
+  .row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .row label{flex:1;font-size:15px}
+  .sheet input,.sheet select{
+    padding:11px 12px;border-radius:10px;font:inherit;font-size:16px;
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+  }
+  .sheet input[type=time]{width:130px}
+  .sheet input[type=number]{width:92px}
+  .sheet input.grow{flex:1;min-width:0}
+  .save{width:100%;padding:14px;border:0;border-radius:12px;background:var(--accent);color:var(--ink-on-accent);font-weight:700;font-size:16px;margin-top:20px}
+  .ghost{width:100%;padding:13px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--dim);font-weight:600;margin-top:9px}
+  .tlist{display:flex;flex-direction:column;gap:7px;margin-top:6px}
+  .trow{display:flex;align-items:center;gap:9px;background:var(--panel-2);border-radius:10px;padding:8px 11px}
+  .trow .nm{flex:1;font-size:14px;font-weight:600}
+  .trow .cd{font-size:11px;color:var(--dim);font-family:ui-monospace,monospace}
+  .trow button{background:transparent;border:0;color:var(--dim);font-size:12px;font-weight:700;padding:5px 7px}
+  .trow.off .nm,.trow.off .cd{opacity:.4;text-decoration:line-through}
+  .note{font-size:12.5px;color:var(--dim);line-height:1.5;margin:8px 0 0}
+  .toggle{position:relative;width:48px;height:28px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line);flex:0 0 auto}
+  .toggle[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
+  .toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--dim);transition:.16s}
+  .toggle[aria-pressed="true"]::after{left:23px;background:var(--ink-on-accent)}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="login">
+  <form class="lcard" id="loginForm">
+    <h1>Panggilan Meja</h1>
+    <p>Masuk dengan akun staf Bryton Café.</p>
+    <input type="email" id="email" placeholder="Email staf" autocomplete="username" required>
+    <input type="password" id="pass" placeholder="Password" autocomplete="current-password" required>
+    <button type="submit" id="loginBtn">Masuk</button>
+    <div class="lerr" id="lerr"></div>
+  </form>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app" hidden>
+  <header>
+    <span class="logo" id="hLogo">Bryton</span>
+    <span class="conn" id="conn"><i></i><span id="connTx">Terhubung</span></span>
+    <div class="filters">
+      <button class="chip" data-floor="all" aria-pressed="true">Semua</button>
+      <button class="chip" data-floor="1" aria-pressed="false">L1</button>
+      <button class="chip" data-floor="2" aria-pressed="false">L2</button>
+      <button class="chip" data-floor="3" aria-pressed="false">L3</button>
+      <button class="iconbtn" id="muteBtn" title="Suara">
+        <svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+      </button>
+      <button class="iconbtn" id="cfgBtn" title="Pengaturan">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty">
+      <div>
+        <svg viewBox="0 0 24 24"><path d="M5 20a7 7 0 0 1 14 0"/><circle cx="12" cy="7" r="3.2"/></svg>
+        <b>Tidak ada panggilan</b>
+        <span>Semua meja tenang. Layar akan meredup otomatis.</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ================= STANDBY ================= -->
+<div id="standby" hidden>
+  <div class="clock" id="sbClock">--:--</div>
+  <div class="hint">Menunggu panggilan</div>
+</div>
+
+<!-- ================= SETTINGS ================= -->
+<div class="modal" id="cfgModal" hidden>
+  <div class="sheet">
+    <h2>Pengaturan</h2>
+
+    <h3>Jam Buka</h3>
+    <div class="row"><label for="opT">Buka</label><input type="time" id="opT"></div>
+    <div class="row"><label for="clT">Tutup</label><input type="time" id="clT"></div>
+    <p class="note">Di luar jam ini tombol panggilan otomatis nonaktif untuk pelanggan. Waktu mengikuti zona Asia/Jakarta. Jam tutup boleh melewati tengah malam.</p>
+
+    <h3>Panggilan</h3>
+    <div class="row"><label for="cdS">Jeda antar panggilan (detik)</label><input type="number" id="cdS" min="0" max="900" step="5"></div>
+    <div class="row"><label>Terima panggilan</label><button class="toggle" id="acceptTog" aria-pressed="true"></button></div>
+    <p class="note">Matikan sementara jika sedang sangat ramai atau ada acara privat.</p>
+
+    <h3>Kelola Meja</h3>
+    <div class="row">
+      <select id="addFloor"><option value="1">Lantai 1</option><option value="2">Lantai 2</option><option value="3">Lantai 3</option></select>
+      <input type="number" id="addCount" min="1" max="40" value="5" title="Jumlah meja">
+      <button class="chip" id="addBtn" style="color:var(--ink)">Tambah</button>
+    </div>
+    <div class="tlist" id="tlist"></div>
+    <p class="note">Menambah meja tidak perlu deploy ulang — cukup cetak QR baru dari halaman QR. Menonaktifkan meja membuat QR-nya berhenti bekerja.</p>
+
+    <button class="save" id="cfgSave">Simpan</button>
+    <button class="ghost" id="cfgClose">Tutup</button>
+    <button class="ghost" id="logoutBtn" style="color:var(--open);border-color:var(--open)">Keluar</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const cfg = window.BRYTON || {};
+  const $  = s => document.querySelector(s);
+  const sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+
+  const KIND = {
+    waiter:{ t:'Panggil Waiter',  c:'k-waiter' },
+    bill:  { t:'Minta Bill',      c:'k-bill'   },
+    clean: { t:'Bersihkan Meja',  c:'k-clean'  },
+    other: { t:'Permintaan Lain', c:'k-other'  }
+  };
+
+  const IDLE_MS = 120000;   // dim after 2 minutes of calm
+
+  let calls = [], tables = {}, settings = {};
+  let filter = 'all', muted = false, standby = false;
+  let idleTimer = null, alarmTimer = null, wakeLock = null, channel = null;
+
+  try { muted = localStorage.getItem('bryton_muted') === '1'; } catch (e) {}
+
+  /* =========== alarm (generated, no audio file to host) =========== */
+  let actx = null;
+  function initAudio() {
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+    } catch (e) {}
+  }
+  function beep() {
+    if (!actx || muted) return;
+    const now = actx.currentTime;
+    [0, 0.22].forEach((off, i) => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'sine';
+      o.frequency.value = i === 0 ? 880 : 1170;
+      g.gain.setValueAtTime(0.0001, now + off);
+      g.gain.exponentialRampToValueAtTime(0.35, now + off + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + off + 0.18);
+      o.connect(g); g.connect(actx.destination);
+      o.start(now + off); o.stop(now + off + 0.2);
+    });
+    // vibrate needs a prior tap on the page; skip quietly until we've had one
+    const tapped = !navigator.userActivation || navigator.userActivation.hasBeenActive;
+    if (navigator.vibrate && tapped) { try { navigator.vibrate([120, 80, 120]); } catch (e) {} }
+  }
+  function syncAlarm() {
+    const pending = calls.some(c => c.status === 'open');
+    if (pending && !alarmTimer) { beep(); alarmTimer = setInterval(beep, 3500); }
+    if (!pending && alarmTimer) { clearInterval(alarmTimer); alarmTimer = null; }
+  }
+
+  /* =========== screen wake lock =========== */
+  async function lockScreen() {
+    try {
+      if ('wakeLock' in navigator && (!wakeLock || wakeLock.released)) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      }
+    } catch (e) { /* denied or unsupported — the tablet's own display setting covers us */ }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') { lockScreen(); refresh(); }
+  });
+
+  /* =========== standby dim =========== */
+  function tickClock() {
+    const d = new Date();
+    $('#sbClock').textContent =
+      String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+  function enterStandby() {
+    if (standby || calls.length) return;
+    standby = true; tickClock();
+    $('#standby').hidden = false;
+    requestAnimationFrame(() => { $('#standby').style.opacity = '1'; });
+  }
+  function exitStandby() {
+    if (!standby) return;
+    standby = false;
+    $('#standby').style.opacity = '0';
+    $('#standby').hidden = true;
+    resetIdle();
+  }
+  function resetIdle() {
+    clearTimeout(idleTimer);
+    if (calls.length) return;               // never dim while work is waiting
+    idleTimer = setTimeout(enterStandby, IDLE_MS);
+  }
+  ['pointerdown', 'keydown'].forEach(ev =>
+    document.addEventListener(ev, () => { exitStandby(); resetIdle(); }, { passive: true }));
+  setInterval(() => { if (standby) tickClock(); }, 10000);
+
+  /* =========== rendering =========== */
+  function elapsed(iso) {
+    const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }
+  function isHot(iso) { return (Date.now() - new Date(iso).getTime()) > 120000; }
+
+  function render() {
+    const list = calls
+      .filter(c => filter === 'all' || String((tables[c.table_id] || {}).floor) === filter)
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+    $('#empty').hidden = list.length > 0;
+    $('#grid').innerHTML = list.map(c => {
+      const t = tables[c.table_id] || { label: c.table_id, floor: '?' };
+      const k = KIND[c.kind] || KIND.other;
+      return `<div class="call ${c.status === 'ack' ? 'ack' : ''}" data-id="${c.id}">
+        <div class="r1">
+          <span class="tbl">${esc(t.label)}</span>
+          <span class="fl">L${esc(t.floor)}</span>
+          <span class="el ${isHot(c.created_at) ? 'hot' : ''}" data-at="${c.created_at}">${elapsed(c.created_at)}</span>
+        </div>
+        <span class="kind ${k.c}">${k.t}</span>
+        ${c.message ? `<div class="msg">${esc(c.message)}</div>` : ''}
+        <div class="acts">
+          ${c.status === 'open' ? `<button class="prim" data-act="ack">Diterima</button>` : ''}
+          <button data-act="done">Selesai</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g,
+      m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  }
+
+  setInterval(() => {
+    document.querySelectorAll('.el').forEach(el => {
+      el.textContent = elapsed(el.dataset.at);
+      el.classList.toggle('hot', isHot(el.dataset.at));
+    });
+  }, 1000);
+
+  $('#grid').addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-act]'); if (!btn) return;
+    const id = btn.closest('.call').dataset.id;
+    const act = btn.dataset.act;
+    btn.disabled = true;
+
+    const patch = act === 'ack'
+      ? { status:'ack',  acked_at: new Date().toISOString() }
+      : { status:'done', done_at:  new Date().toISOString() };
+
+    // optimistic
+    if (act === 'done') calls = calls.filter(c => c.id !== id);
+    else { const c = calls.find(x => x.id === id); if (c) c.status = 'ack'; }
+    render(); syncAlarm(); resetIdle();
+
+    const { error } = await sb.from('calls').update(patch).eq('id', id);
+    if (error) refresh();
+  });
+
+  document.querySelectorAll('.chip[data-floor]').forEach(b => b.addEventListener('click', () => {
+    filter = b.dataset.floor;
+    document.querySelectorAll('.chip[data-floor]').forEach(x =>
+      x.setAttribute('aria-pressed', String(x === b)));
+    render();
+  }));
+
+  $('#muteBtn').addEventListener('click', () => {
+    muted = !muted;
+    try { localStorage.setItem('bryton_muted', muted ? '1' : '0'); } catch (e) {}
+    $('#muteBtn').classList.toggle('muted', muted);
+    if (muted && alarmTimer) { clearInterval(alarmTimer); alarmTimer = null; }
+    else syncAlarm();
+  });
+
+  /* =========== data =========== */
+  function setConn(ok) {
+    $('#conn').classList.toggle('off', !ok);
+    $('#connTx').textContent = ok ? 'Terhubung' : 'Terputus — mencoba lagi';
+  }
+
+  async function loadTables() {
+    const { data } = await sb.from('tables').select('id,label,floor,active').order('id');
+    tables = {};
+    (data || []).forEach(t => { tables[t.id] = t; });
+    return data || [];
+  }
+
+  async function refresh() {
+    const { data, error } = await sb.from('calls')
+      .select('*').in('status', ['open', 'ack'])
+      .order('created_at', { ascending: true });
+    if (error) { setConn(false); return; }
+    setConn(true);
+    calls = data || [];
+    if (calls.length) exitStandby();
+    render(); syncAlarm(); resetIdle();
+  }
+
+  function subscribe() {
+    if (channel) sb.removeChannel(channel);
+    channel = sb.channel('calls-feed')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'calls' }, payload => {
+        const row = payload.new || payload.old;
+        if (!row) return;
+        if (payload.eventType === 'INSERT') {
+          if (!tables[row.table_id]) { loadTables().then(render); }
+          calls.push(row);
+          exitStandby();
+        } else if (payload.eventType === 'UPDATE') {
+          calls = calls.filter(c => c.id !== row.id);
+          if (row.status === 'open' || row.status === 'ack') calls.push(row);
+        } else if (payload.eventType === 'DELETE') {
+          calls = calls.filter(c => c.id !== row.id);
+        }
+        render(); syncAlarm(); resetIdle();
+      })
+      .subscribe(status => {
+        setConn(status === 'SUBSCRIBED');
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setTimeout(subscribe, 4000);
+      });
+  }
+
+  // safety net: realtime can silently drop on a sleeping tablet
+  setInterval(() => { if (!document.hidden) refresh(); }, 25000);
+
+  /* =========== settings =========== */
+  async function loadSettings() {
+    const { data } = await sb.from('settings').select('*').eq('id', 1).maybeSingle();
+    settings = data || {};
+    $('#hLogo').textContent = settings.cafe_name || cfg.CAFE_NAME || 'Bryton';
+  }
+
+  function fillCfg() {
+    $('#opT').value = String(settings.open_time || '08:00').slice(0, 5);
+    $('#clT').value = String(settings.close_time || '22:00').slice(0, 5);
+    $('#cdS').value = settings.cooldown_seconds != null ? settings.cooldown_seconds : 60;
+    $('#acceptTog').setAttribute('aria-pressed', String(settings.accepting_calls !== false));
+    renderTableList();
+  }
+
+  function renderTableList() {
+    const rows = Object.values(tables).sort((a, b) =>
+      a.floor - b.floor || a.id.localeCompare(b.id));
+    $('#tlist').innerHTML = rows.map(t => `
+      <div class="trow ${t.active ? '' : 'off'}" data-id="${esc(t.id)}">
+        <span class="nm">${esc(t.label)}</span>
+        <span class="cd">${esc(t.id)}</span>
+        <button data-tact="toggle">${t.active ? 'Nonaktif' : 'Aktifkan'}</button>
+      </div>`).join('') || '<p class="note">Belum ada meja. Tambahkan di atas.</p>';
+  }
+
+  $('#tlist').addEventListener('click', async e => {
+    const b = e.target.closest('button[data-tact]'); if (!b) return;
+    const id = b.closest('.trow').dataset.id;
+    const t = tables[id]; if (!t) return;
+    await sb.from('tables').update({ active: !t.active }).eq('id', id);
+    await loadTables(); renderTableList(); render();
+  });
+
+  $('#addBtn').addEventListener('click', async () => {
+    const floor = Number($('#addFloor').value);
+    const count = Math.max(1, Math.min(40, Number($('#addCount').value) || 1));
+    const existing = Object.values(tables).filter(t => t.floor === floor).length;
+    const rows = [];
+    for (let i = 1; i <= count; i++) {
+      const n = existing + i;
+      rows.push({
+        id: 'l' + floor + '-' + String(n).padStart(2, '0'),
+        label: 'Meja ' + floor + '.' + n,
+        floor: floor
+      });
+    }
+    const { error } = await sb.from('tables').upsert(rows, { onConflict: 'id' });
+    if (error) { alert('Gagal menambah meja: ' + error.message); return; }
+    await loadTables(); renderTableList();
+  });
+
+  $('#acceptTog').addEventListener('click', () => {
+    const v = $('#acceptTog').getAttribute('aria-pressed') === 'true';
+    $('#acceptTog').setAttribute('aria-pressed', String(!v));
+  });
+
+  $('#cfgBtn').addEventListener('click', () => { fillCfg(); $('#cfgModal').hidden = false; });
+  $('#cfgClose').addEventListener('click', () => { $('#cfgModal').hidden = true; });
+
+  $('#cfgSave').addEventListener('click', async () => {
+    const patch = {
+      open_time:  $('#opT').value || '08:00',
+      close_time: $('#clT').value || '22:00',
+      cooldown_seconds: Math.max(0, Math.min(900, Number($('#cdS').value) || 0)),
+      accepting_calls: $('#acceptTog').getAttribute('aria-pressed') === 'true'
+    };
+    const { error } = await sb.from('settings').update(patch).eq('id', 1);
+    if (error) { alert('Gagal menyimpan: ' + error.message); return; }
+    await loadSettings();
+    $('#cfgModal').hidden = true;
+  });
+
+  $('#logoutBtn').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    location.reload();
+  });
+
+  /* =========== auth =========== */
+  $('#loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    initAudio();                       // this tap is our one chance to unlock audio
+    $('#loginBtn').disabled = true;
+    $('#lerr').textContent = '';
+    const { error } = await sb.auth.signInWithPassword({
+      email: $('#email').value.trim(), password: $('#pass').value
+    });
+    $('#loginBtn').disabled = false;
+    if (error) { $('#lerr').textContent = 'Email atau password salah.'; return; }
+    start();
+  });
+
+  async function start() {
+    $('#login').hidden = true;
+    $('#app').hidden = false;
+    $('#muteBtn').classList.toggle('muted', muted);
+    initAudio(); lockScreen();
+    await loadSettings();
+    await loadTables();
+    await refresh();
+    subscribe();
+  }
+
+  sb.auth.getSession().then(({ data }) => { if (data && data.session) start(); });
+})();
+</script>
+</body>
+</html>
