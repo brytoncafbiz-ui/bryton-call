@@ -124,6 +124,14 @@
   .tlist{display:flex;flex-direction:column;gap:7px;margin-top:6px}
   .trow{display:flex;align-items:center;gap:9px;background:var(--panel-2);border-radius:10px;padding:8px 11px}
   .trow .nm{flex:1;font-size:14px;font-weight:600}
+  .trow input.nm{
+    min-width:0;font:600 14px 'Plus Jakarta Sans',sans-serif;
+    background:transparent;border:1px solid transparent;border-radius:7px;
+    padding:6px 8px;color:var(--ink);
+  }
+  .trow input.nm:hover{border-color:var(--line)}
+  .trow input.nm:focus{background:var(--panel);border-color:var(--accent);outline:none}
+  .trow input.nm.saved{border-color:var(--ok)}
   .trow .cd{font-size:11px;color:var(--dim);font-family:ui-monospace,monospace}
   .trow button{background:transparent;border:0;color:var(--dim);font-size:12px;font-weight:700;padding:5px 7px}
   .trow.off .nm,.trow.off .cd{opacity:.4;text-decoration:line-through}
@@ -207,7 +215,7 @@
       <button class="chip" id="addBtn" style="color:var(--ink)">Tambah</button>
     </div>
     <div class="tlist" id="tlist"></div>
-    <p class="note">Menambah meja tidak perlu deploy ulang — cukup cetak QR baru dari halaman QR. Menonaktifkan meja membuat QR-nya berhenti bekerja.</p>
+    <p class="note">Ketuk nama meja untuk mengubahnya — tekan Enter untuk menyimpan, Esc untuk membatalkan. Kode di sebelah kanan tidak ikut berubah, jadi QR yang sudah dicetak tetap berfungsi. Menambah meja tidak perlu deploy ulang; cukup cetak QR baru dari halaman QR. Menonaktifkan meja membuat QR-nya berhenti bekerja.</p>
 
     <button class="save" id="cfgSave">Simpan</button>
     <button class="ghost" id="cfgClose">Tutup</button>
@@ -461,11 +469,44 @@
       a.floor - b.floor || a.id.localeCompare(b.id));
     $('#tlist').innerHTML = rows.map(t => `
       <div class="trow ${t.active ? '' : 'off'}" data-id="${esc(t.id)}">
-        <span class="nm">${esc(t.label)}</span>
+        <input class="nm" type="text" value="${esc(t.label)}" maxlength="40"
+               data-orig="${esc(t.label)}" aria-label="Nama meja ${esc(t.id)}">
         <span class="cd">${esc(t.id)}</span>
         <button data-tact="toggle">${t.active ? 'Nonaktif' : 'Aktifkan'}</button>
       </div>`).join('') || '<p class="note">Belum ada meja. Tambahkan di atas.</p>';
   }
+
+  // Rename a table: Enter or clicking away saves, Escape cancels.
+  // Only the label changes — the code stays, so printed QRs keep working.
+  $('#tlist').addEventListener('keydown', e => {
+    if (!e.target.classList || !e.target.classList.contains('nm')) return;
+    if (e.key === 'Enter')  { e.preventDefault(); e.target.blur(); }
+    if (e.key === 'Escape') { e.target.value = e.target.dataset.orig; e.target.blur(); }
+  });
+
+  $('#tlist').addEventListener('blur', async e => {
+    const inp = e.target;
+    if (!inp.classList || !inp.classList.contains('nm')) return;
+    const row  = inp.closest('.trow'); if (!row) return;
+    const id   = row.dataset.id;
+    const next = inp.value.trim();
+
+    if (!next)                    { inp.value = inp.dataset.orig; return; }
+    if (next === inp.dataset.orig) return;
+
+    const { error } = await sb.from('tables').update({ label: next }).eq('id', id);
+    if (error) {
+      inp.value = inp.dataset.orig;
+      alert('Gagal mengubah nama meja: ' + error.message);
+      return;
+    }
+
+    inp.dataset.orig = next;
+    if (tables[id]) tables[id].label = next;
+    inp.classList.add('saved');
+    setTimeout(() => inp.classList.remove('saved'), 1200);
+    render();                 // any open call card picks up the new name
+  }, true);                   // capture: blur does not bubble
 
   $('#tlist').addEventListener('click', async e => {
     const b = e.target.closest('button[data-tact]'); if (!b) return;
